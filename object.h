@@ -61,7 +61,7 @@ uint32_t flags;
 uint8_t name[8];
 }group_info_t;
 
-#include "dat_chunk.h"
+#include "chunk.h"
 
 typedef struct
 {
@@ -98,7 +98,7 @@ void object_destroy(object_t* object);
 
 char* error_string(error_t error);
 
-#include "dat_ride.h"
-#include "dat_small_scenery.h"
+#include "ride.h"
+#include "small_scenery.h"
 
 #endif /*BACKEND_H_INCLUDED*/

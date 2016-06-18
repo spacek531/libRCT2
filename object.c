@@ -5,7 +5,7 @@
 #include <math.h>
 #include <ctype.h>
 /*#include "renderer.h"*/
-#include "dat.h"
+#include "object.h"
 
 void* malloc_or_die(size_t size)
 {

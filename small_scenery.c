@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include "dat.h"
+#include "object.h"
 
 
 static error_t animation_indices_decode(animation_indices_t* animation_indices,uint8_t* data,uint32_t data_length,uint32_t* length)

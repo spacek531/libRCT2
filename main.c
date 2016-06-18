@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "dat.h"
+#include "object.h"
 
 //TODO Insert bounds checks in image read
 

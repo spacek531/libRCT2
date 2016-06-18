@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "dat.h"
+#include "object.h"
 
 
 uint32_t rle_decoded_length(uint8_t* bytes,uint32_t length)
