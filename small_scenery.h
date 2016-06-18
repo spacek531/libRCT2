@@ -58,7 +58,7 @@ image_list_t sprites;
 
 
 error_t small_scenery_decode(small_scenery_t* small_scenery,chunk_t* chunk);
-error_t small_scenery_encode(small_scenery_t* small_scenery,chunk_t* chunk);
+error_t small_scenery_encode(small_scenery_t* small_scenery,uint8_t encoding,chunk_t* chunk);
 
 void object_small_scenery_free();
 #endif // DAT_SMALL_SCENERY_H_INCLUDED

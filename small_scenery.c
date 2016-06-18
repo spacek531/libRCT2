@@ -87,7 +87,7 @@ error=image_list_decode(&(scenery->sprites),data+pos,data_length-pos);
 free(data);
 return ERROR_NONE;
 }
-error_t small_scenery_encode(small_scenery_t* scenery,chunk_t* chunk)
+error_t small_scenery_encode(small_scenery_t* scenery,uint8_t encoding,chunk_t* chunk)
 {
 //Compute length of encoded data
 uint32_t name_table_length=string_table_get_encoded_length(&(scenery->name));
@@ -120,7 +120,7 @@ pos+=16;
     pos+=animation_indices_length;
     }
 image_list_encode(&(scenery->sprites),data+pos);
-chunk_encode(chunk,ENCODING_RLE,data,length);
+chunk_encode(chunk,encoding,data,length);
 free(data);
 return ERROR_NONE;
 }
