@@ -4,12 +4,12 @@
 #include <assert.h>
 #include "dat.h"
 
-/*
-uint8_t count_repeated_bytes(uint8_t* bytes,uint32_t pos,uint32_t size)
+//TODO - make handle case of zero size
+uint8_t count_repeated_bytes(uint8_t* bytes,uint32_t size)
 {
-uint8_t first_char=bytes[pos];
+uint32_t pos=0;
+uint8_t first_char=bytes[pos++];
 char repeated_bytes=1;
-pos++;
     while(pos<size&&bytes[pos]==first_char&&repeated_bytes<125)
     {
     pos++;
@@ -17,55 +17,23 @@ pos++;
     }
 return repeated_bytes;
 }
-uint8_t count_differing_bytes(uint8_t* bytes,uint32_t pos,uint32_t size)
+uint8_t count_differing_bytes(uint8_t* bytes,uint32_t size)
 {
-char last_char;
-char differing_bytes;
-    if(pos>=size-2)return 1;
-last_char=bytes[pos];
-differing_bytes=0;
-pos++;
+uint32_t pos=0;
+    if(size<=2)return 1;
+uint8_t last_char=bytes[pos++];
+uint8_t differing_bytes=0;
     while(pos<size&&bytes[pos]!=last_char&&differing_bytes<125)
     {
-    last_char=bytes[pos];
-    pos++;
+    last_char=bytes[pos++];
     differing_bytes++;
     }
 return differing_bytes;
 }
-buffer_t* compress_data(uint8_t* decoded_bytes,uint32_t size)
-{
-buffer_t* encoded_bytes=buffer_new();
 
-uint32_t pos=0;
-    while(pos<size)
-    {
-    uint8_t repeated_bytes=count_repeated_bytes(decoded_bytes,pos,size);
-        if(repeated_bytes>1)
-        {
-        //Bytes are repeated
-        uint8_t byte_to_wryte=~repeated_bytes+2;//Same as 1-repeated_bytes, but repeated_bytes is unsigned
-        buffer_write(encoded_bytes,&byte_to_wryte,1);//Number of bytes to repeat
-        buffer_write(encoded_bytes,decoded_bytes+pos,1);//Byte to repeat
-        pos+=repeated_bytes;
-        }
-        else
-        {
-        int bytes_to_copy=count_differing_bytes(decoded_bytes,pos,size);
-        assert(bytes_to_copy!=0);
-        uint8_t byte_to_wryte=bytes_to_copy-1;
-        buffer_write(encoded_bytes,&byte_to_wryte,1);//Number of bytes to copy
-        buffer_write(encoded_bytes,decoded_bytes+pos,bytes_to_copy);//Byte to copy
-        pos+=bytes_to_copy;
-        }
-    }
-return encoded_bytes;
-}
-*/
-
-int rle_decoded_length(uint8_t* bytes,uint32_t length)
+uint32_t rle_decoded_length(uint8_t* bytes,uint32_t length)
 {
-int decoded_length=0;
+uint32_t decoded_length=0;
 /*Decode RLE data*/
 uint32_t pos=0;
     while(pos<length)
@@ -122,7 +90,51 @@ uint32_t decoded_pos=0;
     if(encoded_pos!=encoded_length||decoded_pos!=decoded_length)return 1;
 return 0;
 }
-
+uint32_t rle_encoded_length(uint8_t* data,uint32_t length)
+{
+uint32_t encoded_length=0;
+uint32_t pos=0;
+    while(pos<length)
+    {
+    uint8_t repeated_bytes=count_repeated_bytes(data+pos,length-pos);
+        if(repeated_bytes>1)
+        {
+        encoded_length+=2;
+        pos+=repeated_bytes;
+        }
+        else
+        {
+        uint8_t bytes_to_copy=count_differing_bytes(data+pos,length-pos);
+        encoded_length+=bytes_to_copy+1;
+        pos+=bytes_to_copy;
+        }
+    }
+return encoded_length;
+}
+void rle_encode(uint8_t* decoded_data,uint32_t decoded_length,uint8_t* encoded_data)
+{
+uint32_t encoded_pos=0;
+uint32_t decoded_pos=0;
+    while(decoded_pos<decoded_length)
+    {
+    uint8_t repeated_bytes=count_repeated_bytes(decoded_data+decoded_pos,decoded_length-decoded_pos);
+        if(repeated_bytes>1)
+        {
+        //Bytes are repeated
+        encoded_data[encoded_pos++]=~repeated_bytes+2;//Same as 1-repeated_bytes, but repeated_bytes is unsigned
+        encoded_data[encoded_pos++]=decoded_data[decoded_pos];
+        decoded_pos+=repeated_bytes;
+        }
+        else
+        {
+        uint8_t bytes_to_copy=count_differing_bytes(decoded_data+decoded_pos,decoded_length-decoded_pos);
+        encoded_data[encoded_pos++]=bytes_to_copy-1;
+        memcpy(encoded_data+encoded_pos,decoded_data+decoded_pos,bytes_to_copy);
+        encoded_pos+=bytes_to_copy;
+        decoded_pos+=bytes_to_copy;
+        }
+    }
+}
 
 error_t chunk_decode(chunk_t* chunk,uint8_t** data,uint32_t* length)
 {
@@ -134,7 +146,6 @@ error_t chunk_decode(chunk_t* chunk,uint8_t** data,uint32_t* length)
     *data=malloc(chunk->length);
     memcpy(*data,chunk->data,chunk->length);
     break;
-
     case ENCODING_RLE:
     *length=rle_decoded_length(chunk->data,chunk->length);
     *data=malloc(*length);
@@ -150,7 +161,30 @@ error_t chunk_decode(chunk_t* chunk,uint8_t** data,uint32_t* length)
     }
 return ERROR_NONE;
 }
-error_t chunk_encode(chunk_t* chunk,uint8_t *data,uint32_t length);
+void chunk_encode(chunk_t* chunk,uint8_t encoding,uint8_t *data,uint32_t length)
+{
+FILE* test=fopen("DECOMPRESSED.DAT","wb");
+fwrite(data,1,length,test);
+fclose(test);
+
+chunk->encoding=encoding;
+    switch(encoding)
+    {
+    case ENCODING_NONE:
+    chunk->length=length;
+    chunk->data=malloc(length);
+    memcpy(chunk->data,data,length);
+    break;
+    case ENCODING_RLE:
+    chunk->length=rle_encoded_length(data,length);
+    chunk->data=malloc(chunk->length);
+    rle_encode(data,length,chunk->data);
+    break;
+    default:
+    assert(0);
+    break;
+    }
+}
 
 
 error_t chunk_read(chunk_t* chunk,FILE* file)
@@ -173,7 +207,7 @@ error_t chunk_write(chunk_t* chunk,FILE* file)
 //Write header
     if(fwrite(&(chunk->encoding),1,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
     if(fwrite(&(chunk->length),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
-    if(fwrite(&(chunk->data),1,chunk->length,file)!=chunk->length)return ERROR_FILE_OPERATION_FAILED;
+    if(fwrite(chunk->data,1,chunk->length,file)!=chunk->length)return ERROR_FILE_OPERATION_FAILED;
 return ERROR_NONE;
 }
 
