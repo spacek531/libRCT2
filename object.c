@@ -316,18 +316,17 @@ uint32_t pos=8;
     //If an error is encountered then free everything allocated
         if(error)
         {
-            for(uint32_t j=0;j<=i;j++)free(image_list->images[i].data);
+            for(uint32_t j=0;j<i;j++)free(image_list->images[i].data);
         free(image_list->images);
         return error;
         }
-
     }
 return 0;
 }
 uint32_t image_list_get_encoded_length(image_list_t* list)
 {
 uint32_t length=8+list->num_images*16;
-    for(int i=0;i<list->num_images;i++)
+    for(uint32_t i=0;i<list->num_images;i++)
     {
         if(list->images[i].flags&0x4)length+=compressed_bitmap_get_encoded_length(list->images+i);
         else length+=direct_bitmap_get_encoded_length(list->images+i);
@@ -341,7 +340,7 @@ uint32_t bitmap_base=8+list->num_images*16;
 uint32_t bitmap_pos=bitmap_base;
 //Offset at which to write next header
 uint32_t header_pos=8;
-    for(int i=0;i<list->num_images;i++)
+    for(uint32_t i=0;i<list->num_images;i++)
     {
     image_t* image=list->images+i;
 
