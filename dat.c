@@ -105,8 +105,7 @@ uint32_t pos=0;
     while(pos<data_length&&data[pos]!=0xFF)
     {
     //Load language
-    uint8_t language=data[pos];
-    pos++;
+    uint8_t language=data[pos++];
 
     uint32_t string_length=0;
         while(pos+string_length<data_length&&data[pos+string_length]!=0)string_length++;
@@ -151,7 +150,10 @@ uint32_t pos=0;
         if(table->strings[i]!=NULL)
         {
         data[pos++]=i;
-        memcpy(data+pos,table->strings[i],strlen((char*)table->strings[i])+1);
+        uint32_t length=strlen((char*)table->strings[i])+1;
+        memcpy(data+pos,table->strings[i],length);
+        pos+=length;
+
         }
     }
 data[pos]=0xFF;
@@ -216,6 +218,7 @@ memset(image->data,0,image->width*image->height);
                 //Read scanline header
                 uint8_t length=data[row_offset++];
                 uint8_t x_displacement=data[row_offset++];
+
                 //The most significant bit of the length is set only if this is the last element
                 last_one=length&0x80;
                 length=length&0x7F;
@@ -242,7 +245,7 @@ uint32_t length=image->height*2;
                 {
                 //Find first non transparent pixel
                     while(x_displacement<image->width&&row[x_displacement]==0)x_displacement++;
-
+                    if(x_displacement==image->width)break;
                 //Find length. Sections can't be longer that 126 for some reason
                 uint32_t scanline_length=0;
                     while(x_displacement+scanline_length<image->width&&row[x_displacement+scanline_length]!=0&&scanline_length<126)scanline_length++;
@@ -254,7 +257,31 @@ return length;
 }
 static void compressed_bitmap_encode(image_t* image,uint8_t* data,uint32_t* length)
 {
+uint32_t pos=image->height*2;
+            for(int i=0;i<image->height;i++)
+            {
+             uint8_t* row=image->data+i*image->width;
+            //Write row offset
+            ((uint16_t*)data)[i]=pos;
 
+            uint8_t x_pos=0;
+                while(x_pos<image->width&&row[x_pos]==0)x_pos++;
+                while(x_pos!=image->width)
+                {
+                //Find length of scanline
+                uint8_t scanline_length=0;
+                    while(x_pos+scanline_length<image->width&&row[x_pos+scanline_length]!=0&&scanline_length<126)scanline_length++;
+                uint8_t x_displacement=x_pos;
+                //Locate start of next scanline
+                x_pos+=scanline_length;
+                    while(x_pos<image->width&&row[x_pos]==0)x_pos++;
+                data[pos++]=(x_pos==image->width)?(scanline_length|0x80):scanline_length;
+                data[pos++]=x_displacement;
+                memcpy(data+pos,row+x_displacement,scanline_length);
+                pos+=scanline_length;
+                }
+            }
+*length=pos;
 }
 
 error_t image_list_decode(image_list_t* image_list,uint8_t* data,uint32_t data_length)
@@ -263,7 +290,6 @@ error_t image_list_decode(image_list_t* image_list,uint8_t* data,uint32_t data_l
 image_list->num_images=*((uint32_t*)data);
 //Calculate offset of start of bitmap data
 uint32_t bitmap_base=8+(image_list->num_images*16);
-
 //Allocate images
 image_list->images=malloc_or_die(image_list->num_images*sizeof(image_t));
 
@@ -300,19 +326,19 @@ return 0;
 }
 uint32_t image_list_get_encoded_length(image_list_t* list)
 {
-uint32_t length=list->num_images*16;
+uint32_t length=8+list->num_images*16;
     for(int i=0;i<list->num_images;i++)
     {
-        //if(list->images[i].flags&0x4)length+=compressed_bitmap_get_encoded_length(list->images+i);
-        //else
-        length+=direct_bitmap_get_encoded_length(list->images+i);
+        if(list->images[i].flags&0x4)length+=compressed_bitmap_get_encoded_length(list->images+i);
+        else length+=direct_bitmap_get_encoded_length(list->images+i);
     }
 return length;
 }
 void image_list_encode(image_list_t* list,uint8_t* data)
 {
 //Offset at which to write next bitmap
-uint32_t bitmap_pos=list->num_images*16;
+uint32_t bitmap_base=8+list->num_images*16;
+uint32_t bitmap_pos=bitmap_base;
 //Offset at which to write next header
 uint32_t header_pos=8;
     for(int i=0;i<list->num_images;i++)
@@ -320,12 +346,11 @@ uint32_t header_pos=8;
     image_t* image=list->images+i;
 
     uint32_t bitmap_length;
-        //if(image->flags&0x4)compressed_bitmap_encode(image_t* image,data+bitmap_pos,&bitmap_length);
-        //else
-        direct_bitmap_encode(image,data+bitmap_pos,&bitmap_length);
+        if(image->flags&0x4)compressed_bitmap_encode(image,data+bitmap_pos,&bitmap_length);
+        else direct_bitmap_encode(image,data+bitmap_pos,&bitmap_length);
 
     //Load image header
-    *((uint32_t*)(data+header_pos))=bitmap_pos;
+    *((uint32_t*)(data+header_pos))=bitmap_pos-bitmap_base;
     *((uint16_t*)(data+header_pos+4))=image->width;
     *((uint16_t*)(data+header_pos+6))=image->height;
     *((uint16_t*)(data+header_pos+8))=image->x_offset;
@@ -335,13 +360,12 @@ uint32_t header_pos=8;
     header_pos+=16;
     bitmap_pos+=bitmap_length;
     }
-
+//Allocate images
 //Write number of images
 *((uint32_t*)data)=list->num_images;
 //Write size of graphic data
-*((uint32_t*)data)=bitmap_pos;//TODO: Actually write size of graphic data
+*((uint32_t*)(data+4))=bitmap_pos-bitmap_base;
 }
-
 /*
 void image_list_write(image_list_t* list,uint8_t* data)
 {
@@ -467,7 +491,6 @@ error_t object_write(object_t* object,FILE* file)
     if(fwrite(&(object->flags),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
     if(fwrite(&(object->name),1,8,file)!=8)return ERROR_FILE_OPERATION_FAILED;
     if(fwrite(&(object->checksum),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
-
 return chunk_write(&(object->chunk),file);
 }
 
