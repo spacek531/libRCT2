@@ -1,6 +1,7 @@
 #ifndef DAT_CHUNK_H_INCLUDED
 #define DAT_CHUNK_H_INCLUDED
 #include <stdint.h>
+#include <stdio.h>
 
 enum chunk_encoding
 {
@@ -18,7 +19,7 @@ uint8_t encoding;
 }chunk_t;
 
 error_t chunk_decode(chunk_t* chunk,uint8_t** data,uint32_t* length);
-error_t chunk_encode(chunk_t* chunk,uint8_t *data,uint32_t length);
+void chunk_encode(chunk_t* chunk,uint8_t encoding,uint8_t *data,uint32_t length);
 
 error_t chunk_read(chunk_t* chunk,FILE* file);
 error_t chunk_write(chunk_t* chunk,FILE* file);
