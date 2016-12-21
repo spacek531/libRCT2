@@ -6,32 +6,24 @@
 
 error_t wall_decode(wall_t* wall,chunk_t* chunk)
 {
-uint8_t* data;
-uint32_t data_length;
-error_t error=chunk_decode(chunk,&data,&data_length);
-    if(error!=ERROR_NONE)return error;
-
-//Load header data
-    if(data_length<0xE)
-    {
-    free(data);
-    return ERROR_PREMATURE_END_OF_CHUNK;
-    }
-wall->cursor_sel=data[6];
-wall->flags=data[7];
-wall->clearance=data[8];
-wall->effects=data[9];
-wall->build_fee=*((int16_t*)(data+10));
-wall->scrolling=data[13];
+error_t error;
+//Load header
+    if(chunk->length<0xE)return ERROR_PREMATURE_END_OF_CHUNK;
+wall->cursor_sel=chunk->data[6];
+wall->flags=chunk->data[7];
+wall->clearance=chunk->data[8];
+wall->effects=chunk->data[9];
+wall->build_fee=*((int16_t*)(chunk->data+10));
+wall->scrolling=chunk->data[13];
 
 uint32_t length;
 uint32_t pos=0xE;
 //Load string table
-error=string_table_decode(&(wall->name),data+pos,data_length-pos,&length);
+error=string_table_decode(&(wall->name),chunk->data+pos,chunk->length-pos,&length);
     if(error!=ERROR_NONE)return error;
 pos+=length;
 //Load group info
-error=group_info_decode(&(wall->group_info),data+pos,length-pos);
+error=group_info_decode(&(wall->group_info),chunk->data+pos,length-pos);
     if(error!=ERROR_NONE)
     {
     string_table_destroy(&(wall->name));
@@ -39,13 +31,12 @@ error=group_info_decode(&(wall->group_info),data+pos,length-pos);
     }
 pos+=16;
 //Load images
-error=image_list_decode(&(wall->sprites),data+pos,data_length-pos);
+error=image_list_decode(&(wall->sprites),chunk->data+pos,chunk->length-pos);
     if(error!=ERROR_NONE)
     {
     string_table_destroy(&(wall->name));
     return error;
     }
-free(data);
 return ERROR_NONE;
 }
 error_t wall_encode(wall_t* wall,uint8_t encoding,chunk_t* chunk)
@@ -76,4 +67,10 @@ image_list_encode(&(wall->sprites),data+pos);
 chunk_encode(chunk,encoding,data,length);
 free(data);
 return ERROR_NONE;
+}
+
+void wall_destroy(wall_t* wall)
+{
+string_table_destroy(&(wall->name));
+image_list_destroy(&(wall->sprites));
 }

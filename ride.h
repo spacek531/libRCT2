@@ -3,36 +3,6 @@
 
 
 
-#define TILE_SLOPE (1/sqrt(6))
-
-#define FLAT 0
-
-#define GENTLE (atan(TILE_SLOPE))
-#define STEEP (atan(4*TILE_SLOPE))
-#define VERTICAL M_PI_2
-#define FG_TRANSITION ((FLAT+GENTLE)/2)
-#define GS_TRANSITION ((GENTLE+STEEP)/2)
-#define SV_TRANSITION ((STEEP+VERTICAL)/2)
-
-#define GENTLE_DIAGONAL (atan(TILE_SLOPE*M_SQRT1_2))
-#define STEEP_DIAGONAL (atan(4*TILE_SLOPE*M_SQRT1_2))
-#define FG_TRANSITION_DIAGONAL ((FLAT+GENTLE_DIAGONAL)/2)
-
-#define BANK M_PI_4
-#define BANK_TRANSITION (M_PI_4/2)
-
-
-#define CORKSCREW_RIGHT_YAW(angle) (atan2(0.5*(1-cos(angle)),1-0.5*(1-cos(angle))))
-#define CORKSCREW_RIGHT_PITCH(angle) (-asin(-sin(angle)/sqrt(2.0)))
-#define CORKSCREW_RIGHT_ROLL(angle) (-atan2(sin(angle)/sqrt(2.0),cos(angle)))
-
-#define CORKSCREW_LEFT_YAW(angle) (-CORKSCREW_RIGHT_YAW(angle))
-#define CORKSCREW_LEFT_PITCH(angle) (-CORKSCREW_RIGHT_PITCH(-angle))
-#define CORKSCREW_LEFT_ROLL(angle) (-CORKSCREW_RIGHT_ROLL(angle))
-
-
-#define NUM_CARS 4
-
 enum //Ride flags
 {
 RIDE_WET=0x00000100u,
@@ -43,15 +13,14 @@ RIDE_ENABLE_OR_ELSE=0x00002000u //Not setting this prevents track designs from s
 }ride_flags_t;
 enum //Vehicle flags
 {
-CAR_ENABLE_REMAP2=0x01000000u,
-CAR_ENABLE_REMAP3=0x00020000u,
-CAR_IS_SWINGING=0x02000000u,
-CAR_IS_SPINNING=0x04000000u,
-CAR_IS_POWERED=0x08000000u,
-CAR_NO_UPSTOPS=0x00000400u,
-CAR_ENABLE_ROLLING_SOUND=0x10000000u,
-CAR_FAKE_SPINNING=0x00000001u
-}car_flags_t;
+CAR_ENABLE_REMAP2=0x00010000u,
+CAR_ENABLE_REMAP3=0x00000200u,
+CAR_IS_SWINGING=0x00020000u,
+CAR_IS_SPINNING=0x00040000u,
+CAR_IS_POWERED=0x00080000u,
+CAR_NO_UPSTOPS=0x00000004u,
+CAR_ENABLE_ROLLING_SOUND=0x00100000u
+}vehicle_flags_t;
 enum //Sprite flags
 {
 SPRITE_FLAT_SLOPE=0x0001,
@@ -163,80 +132,79 @@ CATEGORY_WATER_RIDE=4
 #define TRACK_HALF_LOOP_INVERT 0x0040000000000000l
 
 
-typedef uint64_t track_section_t;
 
-
-typedef struct //Vehicle struct
-{
-uint32_t flags;
-uint32_t spacing;
-uint16_t unknown[9];
-uint16_t sprites;
-uint16_t friction;
-uint8_t running_sound;
-uint8_t secondary_sound;
-uint8_t extra_swing_frames;
-uint8_t highest_rotation_index;
-uint8_t rider_pairs;
-uint8_t riders;
-uint8_t rider_sprites;
-uint8_t spin_inertia;
-uint8_t spin_friction;
-uint8_t powered_acceleration;
-uint8_t powered_velocity;
-uint8_t z_value;
-}car_t;
-
-typedef struct //Ride header
-{
-uint64_t track_sections;
-uint32_t flags;
-uint8_t car_icon_index;
-uint8_t zero_cars;
-uint8_t preview_index;
-uint8_t track_style;
-uint8_t excitement;
-uint8_t intensity;
-uint8_t nausea;
-uint8_t max_height;
-uint8_t categories[2];
-uint8_t car_types[5];
-uint8_t minimum_cars;
-uint8_t maximum_cars;
-car_t cars[NUM_CARS];
-}ride_header_t;
-
-//Ride optional data
 typedef struct
 {
 uint8_t colors[3];
 }color_scheme_t;
 
-typedef struct
-{
-uint8_t* positions;
-uint16_t num;
-}peep_position_data_t;
 
-typedef struct
+
+typedef struct //Vehicle struct
 {
+uint16_t rotation_frame_mask;		// 0x00 , 0x1A
+uint32_t spacing;					// 0x04 , 0x1E
+uint16_t friction;			    // 0x08 , 0x22
+int8_t tab_height;				// 0x0A , 0x24
+uint8_t num_seats;				// 0x0B , 0x25
+uint16_t sprites;			// 0x0C , 0x26
+uint8_t sprite_width;				// 0x0E  //THESE ARE THE PROBLEM
+uint8_t sprite_height_negative;	// 0x0F      //BYTES DO NOT WRITE
+uint8_t sprite_height_positive;	// 0x10      //FOR TRACKED RIDES
+uint8_t var_11;					// 0x11 , 0x2B
+uint32_t flags;				// 0x12 , 0x2C
+uint8_t num_rows;			// 0x54
+uint8_t spin_inertia;			// 0x55
+uint8_t spin_friction;		// 0x56
+uint8_t running_sound;		// 0x57
+uint8_t var_58;					// 0x58
+uint8_t secondary_sound;				// 0x59
+uint8_t var_5A;					// 0x5A
+uint8_t powered_acceleration;		// 0x5B
+uint8_t powered_max_speed;		// 0x5C
+uint8_t car_visual;				// 0x5D
+uint8_t effect_visual;            // 0x5E
+uint8_t z_value;               // 0x5F
+uint8_t special_frames;			// 0x60
+uint8_t* peep_positions;
+uint16_t num_peep_positions;
+}ride_vehicle_t;
+
+typedef struct //Ride header
+{
+uint64_t track_pieces;
+uint32_t flags;
+uint8_t zero_cars;
+uint8_t preview_index;
+uint8_t track_types[3];
+int8_t excitement;
+int8_t intensity;
+int8_t nausea;
+uint8_t max_height;
+uint8_t categories[2];
+uint8_t min_cars_per_train;
+uint8_t max_cars_per_train;
+uint8_t flat_ride_cars;
+uint8_t tab_vehicle;
+uint8_t default_vehicle;
+uint8_t front_vehicle;
+uint8_t second_vehicle;
+uint8_t rear_vehicle;
+uint8_t third_vehicle;
+uint8_t shop_item;
+uint8_t shop_item_secondary;
+ride_vehicle_t vehicles[4];
 color_scheme_t* default_colors;
-uint8_t num_default_colors;
-peep_position_data_t peep_positions[4];
-}ride_structures_t;
-
-/*
-ride_header_t* ride_header_new();
-ride_structures_t* ride_structures_new();
-void ride_structures_set_num_peep_positions(ride_structures_t* structures,int car,int num);
-void ride_structures_set_num_default_colors(ride_structures_t* structures,int num);
-*/
-
-struct object_s* object_new_ride();
-void object_ride_load(struct object_s* object,uint8_t* bytes,uint32_t* pos_ptr);
-//void object_ride_write(struct object_s* object,buffer_t* buffer);
-void object_free_ride(struct object_s* object);
+uint16_t num_default_colors;
+string_table_t name;
+string_table_t description;
+string_table_t capacity;
+image_list_t sprites;
+}ride_t;
 
 
+error_t ride_decode(ride_t* ride,chunk_t* chunk);
+error_t ride_encode(ride_t* ride,uint8_t encoding,chunk_t* chunk);
+void ride_destroy(ride_t* ride);
 
 #endif // DAT_RIDE_H_INCLUDED

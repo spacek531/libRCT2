@@ -6,10 +6,8 @@
 #include <math.h>
 #include "image.h"
 
-
 #define NUM_STRING_TABLES 3
 #define NUM_LANGUAGES 14
-
 
 typedef enum //Languages
 {
@@ -27,7 +25,16 @@ OBJECT_ORIGIN_CUSTOM
 typedef enum
 {
 OBJECT_RIDE=0,
-OBJECT_SMALL_SCENERY=1
+OBJECT_SMALL_SCENERY=1,
+OBJECT_LARGE_SCENERY=2,
+OBJECT_WALL=3,
+OBJECT_PATH_BANNER=4,
+OBJECT_PATH=5,
+OBJECT_PATH_OBJECT=6,
+OBJECT_SCENERY_GROUP=7,
+OBJECT_ENTRANCE=8,
+OBJECT_WATER=9,
+OBJECT_SCENARIO_TEXT=10
 }object_type_t;
 
 typedef enum
@@ -46,7 +53,7 @@ ERROR_INVALID_OBJECT,
 
 typedef struct //image list
 {
-image_t* images;
+rct2_image_t* images;
 uint32_t num_images;
 }image_list_t;
 
@@ -62,6 +69,7 @@ uint8_t name[8];
 }group_info_t;
 
 #include "chunk.h"
+
 
 typedef struct
 {
@@ -87,6 +95,7 @@ void group_info_encode(group_info_t* table,uint8_t* data);
 error_t image_list_decode(image_list_t* image_list,uint8_t* data,uint32_t data_length);
 uint32_t image_list_get_encoded_length(image_list_t* list);
 void image_list_encode(image_list_t* list,uint8_t* data);
+void image_list_destroy(image_list_t* list);
 
 error_t object_read(object_t* object,FILE* file);
 error_t object_write(object_t* object,FILE* file);

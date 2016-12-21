@@ -2,7 +2,7 @@
 #define WALL_H_INCLUDED
 #include <stdint.h>
 
-enum //Small scenery flags
+enum //Wall flags
 {
 WALL_REMAP_1=0x01,
 WALL_GLASS=0x02,
@@ -13,7 +13,7 @@ WALL_REMAP_2=0x40,
 WALL_REMAP_3=0x80
 }wall_flags_t;
 
-typedef struct //Small scenery
+typedef struct //Wall
 {
 uint8_t cursor_sel;
 uint8_t flags;
@@ -29,7 +29,7 @@ image_list_t sprites;
 
 error_t wall_decode(wall_t* wall,chunk_t* chunk);
 error_t wall_encode(wall_t* wall,uint8_t encoding,chunk_t* chunk);
-
+void wall_destroy(wall_t* wall);
 
 
 #endif // WALL_H_INCLUDED

@@ -10,13 +10,11 @@ int16_t x_offset;
 int16_t y_offset;
 uint16_t flags;
 uint8_t* data;
-}image_t;
+}rct2_image_t;
 
-void image_save_bmp(image_t* image,char* filename);
-
-//image_t image_new(uint8_t width,uint8_t height,uint8_t color);
-//image_t* image_copy(image_t* source);
-//void image_free(image_t* image);
-//GdkPixbuf* CreateBlankPixbuf();
-//void ShowImageInPixbuf(GdkPixbuf* pixbuf,Image* image);
+void image_new(rct2_image_t* image,uint16_t width,uint16_t height,int16_t x_offset,int16_t y_offset,uint16_t flags);
+void image_copy(rct2_image_t* src,rct2_image_t* dst);
+void image_blit(rct2_image_t* dst,rct2_image_t* src,int16_t x_offset,int16_t y_offset);
+void image_write_bmp(rct2_image_t* image,FILE* file);
+void image_destroy(rct2_image_t* image);
 #endif // IMAGE_H_INCLUDED

@@ -5,7 +5,7 @@
 #include "object.h"
 
 
-uint32_t rle_decoded_length(uint8_t* bytes,uint32_t length)
+static uint32_t rle_decoded_length(uint8_t* bytes,uint32_t length)
 {
 uint32_t decoded_length=0;
 /*Decode RLE data*/
@@ -28,7 +28,7 @@ uint32_t pos=0;
     }
 return decoded_length;
 }
-int rle_decode(uint8_t* encoded_bytes,uint32_t encoded_length,uint8_t* decoded_bytes,uint32_t decoded_length)
+static int rle_decode(uint8_t* encoded_bytes,uint32_t encoded_length,uint8_t* decoded_bytes,uint32_t decoded_length)
 {
 /*Decode RLE data*/
 uint32_t encoded_pos=0;
@@ -66,10 +66,10 @@ return 0;
 }
 
 
-int count_repeated_bytes(uint8_t* bytes,uint32_t length)
+static uint32_t count_repeated_bytes(uint8_t* bytes,uint32_t length)
 {
     if(length==0)return 0;
-int pos=0;
+uint32_t pos=0;
 uint8_t first_byte=bytes[0];
     do
     {
@@ -77,20 +77,19 @@ uint8_t first_byte=bytes[0];
     }while(pos<length&&bytes[pos]==first_byte&&pos<125);
 return pos;
 }
-int count_differing_bytes(uint8_t* bytes,uint32_t length)
+static uint32_t count_differing_bytes(uint8_t* bytes,uint32_t length)
 {
     if(length==0)return 0;
-int pos=0;
-uint8_t last_byte;
+uint32_t pos=0;
     while(pos<length&&(pos+1==length||bytes[pos]!=bytes[pos+1])&&pos<125)
     {
     pos++;
     }
 return pos;
 }
-int rle_encoded_length(uint8_t* bytes,uint32_t length)
+static uint32_t rle_encoded_length(uint8_t* bytes,uint32_t length)
 {
-int encoded_length=0;
+uint32_t encoded_length=0;
 
 uint32_t pos=0;
     while(pos<length)
@@ -110,7 +109,7 @@ uint32_t pos=0;
     }
 return encoded_length;
 }
-int rle_encode(uint8_t* decoded_bytes,uint32_t decoded_length,uint8_t* encoded_bytes)
+static uint32_t rle_encode(uint8_t* decoded_bytes,uint32_t decoded_length,uint8_t* encoded_bytes)
 {
 /*Encode RLE data*/
 uint32_t encoded_pos=0;
@@ -149,7 +148,7 @@ error_t chunk_decode(chunk_t* chunk,uint8_t** data,uint32_t* length)
     break;
     case ENCODING_RLE:
     *length=rle_decoded_length(chunk->data,chunk->length);
-    *data=malloc(*length);
+    *data=malloc_or_die(*length);
         if(rle_decode(chunk->data,chunk->length,*data,*length))
         {
         free(*data);
@@ -160,14 +159,13 @@ error_t chunk_decode(chunk_t* chunk,uint8_t** data,uint32_t* length)
     return ERROR_INVALID_ENCODING;
     break;
     }
+FILE* test=fopen("DECOMPRESSED.DAT","wb");
+fwrite(*data,1,*length,test);
+fclose(test);
 return ERROR_NONE;
 }
 void chunk_encode(chunk_t* chunk,uint8_t encoding,uint8_t *data,uint32_t length)
 {
-FILE* test=fopen("DECOMPRESSED.DAT","wb");
-fwrite(data,1,length,test);
-fclose(test);
-
 chunk->encoding=encoding;
     switch(encoding)
     {
@@ -190,25 +188,32 @@ chunk->encoding=encoding;
 
 error_t chunk_read(chunk_t* chunk,FILE* file)
 {
+chunk_t chunk_enc;
 //Check we can read header safely
-    if(fread(&(chunk->encoding),1,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
-    if(fread(&(chunk->length),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
+    if(fread(&(chunk_enc.encoding),1,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
+    if(fread(&(chunk_enc.length),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
 
-chunk->data=malloc(chunk->length);
+chunk_enc.data=malloc(chunk_enc.length);
 
-    if(fread(chunk->data,1,chunk->length,file)!=chunk->length)
+    if(fread(chunk_enc.data,1,chunk_enc.length,file)!=chunk_enc.length)
     {
-    free(chunk->data);
+    free(chunk_enc.data);
     return feof(file)?ERROR_PREMATURE_EOF:ERROR_FILE_OPERATION_FAILED;
     }
-return ERROR_NONE;
+
+error_t error=chunk_decode(&chunk_enc,&(chunk->data),&(chunk->length));
+chunk->encoding=chunk_enc.encoding;
+free(chunk_enc.data);
+return error;
 }
 error_t chunk_write(chunk_t* chunk,FILE* file)
 {
+chunk_t chunk_enc;
+chunk_encode(&chunk_enc,chunk->encoding,chunk->data,chunk->length);
 //Write header
-    if(fwrite(&(chunk->encoding),1,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
-    if(fwrite(&(chunk->length),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
-    if(fwrite(chunk->data,1,chunk->length,file)!=chunk->length)return ERROR_FILE_OPERATION_FAILED;
+    if(fwrite(&(chunk_enc.encoding),1,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
+    if(fwrite(&(chunk_enc.length),4,1,file)!=1)return ERROR_FILE_OPERATION_FAILED;
+    if(fwrite(chunk_enc.data,1,chunk_enc.length,file)!=chunk_enc.length)return ERROR_FILE_OPERATION_FAILED;
 return ERROR_NONE;
 }
 
