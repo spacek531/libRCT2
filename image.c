@@ -294,8 +294,9 @@ y_offset+=src->y_offset;
 	return;
 	}
 	for(int y=0;y<src->height;y++)
+	for(int x=0;x<src->width;x++)
 	{
-	memmove(dst->data+(y_offset+y)*dst->width+x_offset,src->data+y*src->width,src->width);
+		if(src->data[y*src->width+x])dst->data[(y_offset+y)*dst->width+x_offset+x]=src->data[y*src->width+x];
 	}
 }
 
