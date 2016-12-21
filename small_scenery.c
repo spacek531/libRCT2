@@ -33,7 +33,6 @@ error_t error;
 //Load header chunk->data
 	if(chunk->length<0x1C)
 	{
-	free(chunk->data);
 	return ERROR_PREMATURE_END_OF_CHUNK;
 	}
 scenery->flags=*((uint32_t*)(chunk->data+6));
