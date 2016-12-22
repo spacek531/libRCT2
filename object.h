@@ -109,6 +109,7 @@ char* error_string(error_t error);
 
 #include "ride.h"
 #include "small_scenery.h"
+#include "large_scenery.h"
 #include "wall.h"
 
 #endif /*BACKEND_H_INCLUDED*/
