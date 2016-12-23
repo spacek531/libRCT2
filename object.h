@@ -112,5 +112,7 @@ char* error_string(error_t error);
 #include "large_scenery.h"
 #include "wall.h"
 #include "path_banner.h"
+#include "path.h"
+#include "path_object.h"
 
 #endif /*BACKEND_H_INCLUDED*/
