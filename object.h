@@ -7,7 +7,7 @@
 #include "image.h"
 
 #define NUM_STRING_TABLES 3
-#define NUM_LANGUAGES 14
+#define NUM_LANGUAGES 16
 
 typedef enum //Languages
 {
@@ -32,7 +32,7 @@ OBJECT_PATH_BANNER=4,
 OBJECT_PATH=5,
 OBJECT_PATH_OBJECT=6,
 OBJECT_SCENERY_GROUP=7,
-OBJECT_ENTRANCE=8,
+OBJECT_PARK_ENTRANCE=8,
 OBJECT_WATER=9,
 OBJECT_SCENARIO_TEXT=10
 }object_type_t;
@@ -114,5 +114,7 @@ char* error_string(error_t error);
 #include "path_banner.h"
 #include "path.h"
 #include "path_object.h"
+#include "scenery_group.h"
+#include "park_entrance.h"
 
 #endif /*BACKEND_H_INCLUDED*/
