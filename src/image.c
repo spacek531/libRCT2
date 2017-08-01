@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "image.h"
-#include "palette.h"
 
 uint8_t palette[256][3]={
 {0,0,0},//0
