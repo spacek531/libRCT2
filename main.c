@@ -8,7 +8,7 @@
 
 int main()
 {
-FILE* file=fopen("ObjData/ARRT1.DAT","rb");
+FILE* file=fopen("/home/edward/.config/OpenRCT2/object/TESTING.DAT","rb");
 
 
     if(file==NULL)
@@ -33,17 +33,16 @@ error=ride_decode(&ride,&(object.chunk));
     return 1;
     }
 
-
-printf("%x\n",ride.vehicles[ride.front_vehicle].flags);
+printf("%x\n",ride.vehicles[ride.default_vehicle].var_11);
 //ride.flags=48409;
-ride.vehicles[ride.default_vehicle].flags=0x800000;//890000
-ride.vehicles[ride.default_vehicle].var_11=1;//890000
-ride.vehicles[ride.default_vehicle].sprites=1;
+//ride.vehicles[ride.default_vehicle].flags=0x800000;//890000
+//ride.vehicles[ride.default_vehicle].var_11=1;//890000
+//ride.vehicles[ride.default_vehicle].sprites=1;
 
 
-ride.track_types[0]=4;
-ride.categories[0]=2;
-
+//ride.track_types[0]=4;
+//ride.categories[0]=2;
+/*
 object_t object2;
 object2.flags=0;//object.flags;
 object2.checksum=object.checksum;
